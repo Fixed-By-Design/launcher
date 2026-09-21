@@ -4,7 +4,17 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
 import { createManifest } from '../scripts/release-manifest.mjs'
+
+test('packaging uses valid configuration and the public GitHub update provider', async () => {
+  const require = createRequire(import.meta.url)
+  const { validateConfiguration } = require('app-builder-lib/out/util/config/config.js')
+  const metadata = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'))
+  await validateConfiguration(metadata.build)
+  assert.equal(metadata.repository.url, 'https://github.com/Fixed-By-Design/launcher.git')
+  assert.deepEqual(metadata.build.publish, [{ provider: 'github', owner: 'Fixed-By-Design', repo: 'launcher' }])
+})
 
 test('bootstrap manifest identifies every platform and exact payload bytes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'fbd-manifest-'))

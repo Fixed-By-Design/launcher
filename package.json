@@ -6,6 +6,10 @@
   "description": "Fixed By Design community launcher",
   "author": "Fixed By Design",
   "main": "dist/electron/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fixed-By-Design/launcher.git"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -p tsconfig.node.json && vite build && esbuild src/electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/electron/preload.cjs",
@@ -55,10 +59,6 @@
       "target": [
         "nsis"
       ]
-    },
-    "repository": {
-      "type": "git",
-      "url": "https://github.com/Fixed-By-Design/launcher.git"
     },
     "nsis": {
       "oneClick": false,

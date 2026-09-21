@@ -29,7 +29,7 @@ import Foundation
                     Task { @MainActor in self.progress = value }
                 }).fetch(url)
                 status = "Vérification du téléchargement…"
-                try Installer.verify(file, payload: payload)
+                try await Task.detached { try Installer.verify(file, payload: payload) }.value
                 try Installer.markInternet(file)
                 try Task.checkCancellation()
                 installing = true
@@ -62,7 +62,7 @@ import Foundation
     }
 }
 
-@main struct BootstrapApp: App {
+@MainActor @main struct BootstrapApp: App {
     @NSApplicationDelegateAdaptor(ApplicationDelegate.self) var delegate
     @StateObject private var model = SetupModel()
     var body: some Scene {
