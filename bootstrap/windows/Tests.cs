@@ -65,7 +65,9 @@ namespace FixedByDesign {
           await installer.Download(latest.Item1, latest.Item2, destination, null, CancellationToken.None);
           Check(File.ReadAllText(destination) == "future release payload", "Verified download differs");
           Installer.MarkInternet(destination);
-          Check(File.ReadAllText(destination + ":Zone.Identifier").Contains("ZoneId=3"), "Internet provenance missing");
+          using (var reader = new StreamReader(Installer.OpenInternetMarker(destination, FileAccess.Read))) {
+            Check(reader.ReadToEnd().Contains("ZoneId=3"), "Internet provenance missing");
+          }
           payload.sha512 = new string('0', 128);
           await RejectAsync(() => installer.Download(release, payload, destination, null, CancellationToken.None));
           Check(!File.Exists(destination + ".part"), "Corrupted partial file retained");

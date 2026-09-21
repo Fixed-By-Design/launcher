@@ -4,10 +4,13 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
+using System.Runtime.InteropServices;
+using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
+using Microsoft.Win32.SafeHandles;
 
 namespace FixedByDesign {
   public sealed class Asset {
@@ -147,7 +150,19 @@ namespace FixedByDesign {
       }
     }
     public static void MarkInternet(string path) {
-      File.WriteAllText(path + ":Zone.Identifier", "[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=" + Repository + "\r\n");
+      using (var stream = OpenInternetMarker(path, FileAccess.Write))
+      using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false))) {
+        writer.Write("[ZoneTransfer]\r\nZoneId=3\r\nHostUrl=" + Repository + "\r\n");
+      }
+    }
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern SafeFileHandle CreateFile(string name, uint access, uint sharing, IntPtr security, uint disposition, uint flags, IntPtr template);
+    internal static FileStream OpenInternetMarker(string path, FileAccess access) {
+      var handle = CreateFile(path + ":Zone.Identifier", access == FileAccess.Write ? 0x40000000u : 0x80000000u, 1, IntPtr.Zero, access == FileAccess.Write ? 2u : 3u, 0x80, IntPtr.Zero);
+      if (!handle.IsInvalid) return new FileStream(handle, access);
+      var error = Marshal.GetLastWin32Error();
+      handle.Dispose();
+      throw new Win32Exception(error, "Windows n’a pas pu conserver la provenance Internet du téléchargement.");
     }
   }
 }
