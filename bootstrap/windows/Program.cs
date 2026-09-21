@@ -51,7 +51,7 @@ namespace FixedByDesign {
     }
     async Task BeginInstall() {
       SystemInfo system; GetNativeSystemInfo(out system);
-      if (system.architecture != 9) { status.Text = "Cette version nécessite Windows x64 sur un processeur Intel ou AMD."; return; }
+      if (system.architecture != 9 || Environment.OSVersion.Version.Major < 10) { status.Text = "Cette version nécessite Windows 10/11 x64 sur un processeur Intel ou AMD."; return; }
       install.Enabled = false; cancel.Enabled = true;
       cancellation = new CancellationTokenSource();
       cancellation.CancelAfter(TimeSpan.FromMinutes(20));

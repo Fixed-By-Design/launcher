@@ -137,14 +137,14 @@ enum Installer {
         return matches[0]
     }
     static func select(_ release: Release, _ manifest: Manifest, _ architecture: String) throws -> Payload {
-        guard !release.draft, !release.prerelease, release.tag_name.range(of: #"^v[0-9]+\.[0-9]+\.[0-9]+$"#, options: .regularExpression) != nil,
+        guard !release.draft, !release.prerelease, release.tag_name.range(of: #"\Av[0-9]+\.[0-9]+\.[0-9]+\z"#, options: .regularExpression) != nil,
               manifest.schemaVersion == 1, "v" + manifest.version == release.tag_name, ["arm64", "x64"].contains(architecture) else {
             throw SetupError(message: "Le manifeste ne correspond pas au canal ou à ce Mac. Télécharge à nouveau l’installateur depuis GitHub.")
         }
         guard let payload = manifest.payloads["macos-" + architecture],
               payload.name == "FBD-Launcher-" + manifest.version + "-macos-" + architecture + ".dmg",
               payload.size > 0, payload.size <= 1024 * 1024 * 1024,
-              payload.sha512.range(of: #"^[a-f0-9]{128}$"#, options: .regularExpression) != nil,
+              payload.sha512.range(of: #"\A[a-f0-9]{128}\z"#, options: .regularExpression) != nil,
               try asset(release, payload.name).size == payload.size else {
             throw SetupError(message: "Le fichier macOS est invalide ou absent.")
         }
@@ -157,7 +157,7 @@ enum Installer {
     }
     static func resolve(directory: URL) async throws -> (Release, Payload, String) {
         let release: Release = try await metadata(latest, directory: directory)
-        guard !release.draft, !release.prerelease, release.tag_name.range(of: #"^v[0-9]+\.[0-9]+\.[0-9]+$"#, options: .regularExpression) != nil else {
+        guard !release.draft, !release.prerelease, release.tag_name.range(of: #"\Av[0-9]+\.[0-9]+\.[0-9]+\z"#, options: .regularExpression) != nil else {
             throw SetupError(message: "Aucune release compatible disponible.")
         }
         let manifestAsset = try asset(release, "launcher-manifest.json")
@@ -223,6 +223,13 @@ enum Installer {
             guard Bundle(url: source)?.bundleIdentifier == bundleID,
                   Bundle(url: source)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String == version else {
                 throw SetupError(message: "L’application de cette image ne correspond pas à la version annoncée.")
+            }
+            if let minimum = Bundle(url: source)?.object(forInfoDictionaryKey: "LSMinimumSystemVersion") as? String {
+                let components = minimum.split(separator: ".").compactMap { Int($0) }
+                guard components.count >= 2, components.count <= 3,
+                      ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: components[0], minorVersion: components[1], patchVersion: components.count == 3 ? components[2] : 0)) else {
+                    throw SetupError(message: "Cette version du launcher nécessite macOS \(minimum) ou ultérieur. Ton installation existante est conservée.")
+                }
             }
             try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", source.path])
             try files.createDirectory(at: staging, withIntermediateDirectories: false)

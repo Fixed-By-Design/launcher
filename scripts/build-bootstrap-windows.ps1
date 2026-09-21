@@ -15,7 +15,7 @@ try {
   $iconPath = Join-Path $temporary 'bootstrap.ico'
   $stream = [System.IO.File]::Create($iconPath)
   try { $icon.Save($stream) } finally { $stream.Dispose(); $icon.Dispose() }
-  & $compiler /nologo /codepage:65001 /target:winexe /platform:anycpu /optimize+ "/win32icon:$iconPath" '/out:release/FBD-Launcher-Setup-windows-x64.exe' $references bootstrap/windows/Installer.cs bootstrap/windows/Program.cs
+  & $compiler /nologo /codepage:65001 /target:winexe /platform:anycpu /optimize+ /win32manifest:bootstrap/windows/app.manifest "/win32icon:$iconPath" '/out:release/FBD-Launcher-Setup-windows-x64.exe' $references bootstrap/windows/Installer.cs bootstrap/windows/Program.cs
   if ($LASTEXITCODE -ne 0) { throw 'Bootstrap compilation failed' }
   $installed = Join-Path $temporary 'installed'
   $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
