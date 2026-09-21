@@ -63,7 +63,8 @@ async function openSettings() {
 }
 function closeSettings() {
   settings.value = false
-  settingsButton.value?.focus()
+  if (state.value.deviceCode) codePanel.value?.focus({ preventScroll: true })
+  else settingsButton.value?.focus()
 }
 async function changeMemory(event: Event) {
   const select = event.target as HTMLSelectElement
