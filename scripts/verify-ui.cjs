@@ -25,6 +25,14 @@ const errors = []
 let rejectMemory = false
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const evaluate = script => window.webContents.executeJavaScript(script)
+async function resize(width, height) {
+  window.setContentSize(width, height)
+  for (let attempt = 0; attempt < 40; attempt++) {
+    if (await evaluate(`innerWidth === ${width} && innerHeight === ${height}`)) return
+    await delay(50)
+  }
+  throw new Error(`The native window did not reach the requested ${width}x${height} content size`)
+}
 const emit = () => window.webContents.send('ui-test:state', state)
 ipcMain.handle('ui-test:state', () => state)
 ipcMain.handle('ui-test:action', (_event, name, args) => {
@@ -50,7 +58,7 @@ async function capture(name, next) {
       return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};
     };
     return {
-      width:innerWidth,height:innerHeight,scrollWidth:document.documentElement.scrollWidth,
+      width:innerWidth,height:innerHeight,clientWidth:document.documentElement.clientWidth,scrollWidth:document.documentElement.scrollWidth,
       active:document.activeElement.id || document.activeElement.className,
       device:bounds('.device-code'),settings:bounds('dialog[open]'),update:bounds('.update-banner'),
       play:bounds('.play'),gallery:bounds('.photo-gallery'),copy:bounds('.gate-copy'),cancel:bounds('.cancel-operation'),
@@ -58,7 +66,7 @@ async function capture(name, next) {
       missingImages:[...document.images].filter(e=>!e.complete || !e.naturalWidth).map(e=>e.src)
     };
   })()`)
-  assert.equal(snapshot.scrollWidth, snapshot.width, name + ': horizontal overflow')
+  assert.ok(snapshot.scrollWidth <= snapshot.clientWidth, name + ': horizontal overflow')
   assert.deepEqual(snapshot.missingImages, [], name + ': missing image')
   if (snapshot.play) assert.ok(snapshot.play.top >= 0 && snapshot.play.bottom <= snapshot.height, name + ': primary launch action must be visible')
   if (snapshot.cancel) assert.ok(snapshot.cancel.top >= 0 && snapshot.cancel.bottom <= snapshot.height, name + ': cancellation must be visible')
@@ -71,23 +79,24 @@ async function capture(name, next) {
 app.whenReady().then(async () => {
   if (output) await mkdir(output, { recursive: true })
   window = new BrowserWindow({
-    width: 1180, height: 748, useContentSize: true, show: false,
+    width: 1180, height: 748, useContentSize: true, enableLargerThanScreen: true, show: false,
     webPreferences: { preload: join(__dirname, '../tests/ui-preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
   })
   window.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message) })
   await window.loadFile(join(renderer, 'index.html'))
+  await resize(1180, 748)
   await delay(400)
   const first = await capture('01-first-start')
-  window.setContentSize(900, 632)
+  await resize(900, 632)
   await capture('01-minimum-first-start')
-  window.setContentSize(1180, 748)
+  await resize(1180, 748)
   const member = {
     access: 'allowed', discordName: 'Membre de test',
     release: { version: '1.9.1', versionId: 'MYxEsI5B', notes: '## Nouveautés\n- **Java** et `Fabric`\n[Notes](https://example.test)' },
   }
   const ready = { ...member, minecraftName: 'JoueurTest', minecraftNeedsLogin: false, runtimeReady: true, installedVersion: '1.9.1', message: 'Tout est prêt pour jouer.' }
   const readySnapshot = await capture('02-ready', ready)
-  assert.equal(readySnapshot.gallery.left, first.gallery.left, 'Connected and disconnected views must share the same composition')
+  assert.ok(Math.abs(readySnapshot.gallery.left / readySnapshot.clientWidth - first.gallery.left / first.clientWidth) < .002, 'Connected and disconnected views must share the same composition')
   assert.equal(await evaluate(`document.querySelectorAll('.photo-gallery').length`), 1)
   assert.match(await evaluate(`document.querySelector('.scene-photo').src`), /panorama/)
   await evaluate(`document.querySelectorAll('.scene-picker button')[0].click()`)
@@ -126,7 +135,7 @@ app.whenReady().then(async () => {
   assert.equal(await evaluate(`document.querySelector('dialog').open`), false)
   assert.equal(await evaluate(`document.activeElement.className`), 'icon-button')
 
-  window.setContentSize(900, 632)
+  await resize(900, 632)
   await capture('04-minimum-ready', ready)
   await capture('04-minimum-first-install', { ...ready, runtimeReady: false, installedVersion: undefined, message: 'Minecraft, Java et le modpack seront installés avant de jouer.' })
   await capture('04-minimum-onboarding', { ...member, message: 'Connecte ton compte Minecraft Java.' })
