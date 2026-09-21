@@ -14,6 +14,7 @@ const release: PackRelease = {
   url: 'https://cdn.modrinth.com/data/tCkQ45mj/versions/MYxEsI5B/pack.mrpack',
   sha512: 'a'.repeat(128), size: 100, publishedAt: '2026-09-16T00:00:00Z', notes: '',
 }
+const settingsFile = join('/in-memory-launcher-fixture', 'game', 'settings.json')
 
 async function fixture(options: { firstRun?: boolean; noProfile?: boolean; ready?: boolean; failRuntime?: boolean; packaged?: boolean; totalMemoryMb?: number; memory?: MemorySettings } = {}) {
   const root = '/in-memory-launcher-fixture/game'
@@ -189,7 +190,7 @@ test('cancelling preparation is durable and does not restart on refresh', async 
   assert.equal((await f.state()).busy, false)
   assert.equal((await f.state()).runtimeReady, false)
   assert.match((await f.state()).message, /annulée/)
-  assert.equal((f.files.get('/in-memory-launcher-fixture/game/settings.json') as { preparationPaused: boolean }).preparationPaused, true)
+  assert.equal((f.files.get(settingsFile) as { preparationPaused: boolean }).preparationPaused, true)
   await f.call('refresh')
   assert.equal(f.controls.runtimes, 1)
 })
@@ -232,7 +233,7 @@ test('new profiles use hardware-based Auto memory in the actual launch arguments
     assert.equal((await f.state()).recommendedMemoryMb, expected)
     await f.call('play')
     assert.equal(f.controls.launchMemory, expected)
-    assert.equal((f.files.get('/in-memory-launcher-fixture/game/settings.json') as MemorySettings).memoryMode, 'auto')
+    assert.equal((f.files.get(settingsFile) as MemorySettings).memoryMode, 'auto')
   }
 })
 
@@ -241,13 +242,13 @@ test('existing preferences survive hardware changes and preparation without bein
     const f = await fixture({ memory, totalMemoryMb: 16384 })
     assert.equal((await f.state()).memoryMode, 'manual')
     assert.equal((await f.state()).memoryMb, memory.memoryMb)
-    assert.deepEqual(f.files.get('/in-memory-launcher-fixture/game/settings.json'), memory)
+    assert.deepEqual(f.files.get(settingsFile), memory)
   }
   const f = await fixture({ memory: { memoryMb: 12288 }, totalMemoryMb: 8192 })
   assert.equal((await f.state()).memoryMb, 6144)
   assert.equal((await f.state()).preferredMemoryMb, 12288)
   await f.call('install')
-  const saved = f.files.get('/in-memory-launcher-fixture/game/settings.json') as MemorySettings
+  const saved = f.files.get(settingsFile) as MemorySettings
   assert.equal(saved.memoryMb, 12288)
   const restarted = await fixture({ memory: saved, totalMemoryMb: 32768 })
   assert.equal((await restarted.state()).memoryMb, 12288)
@@ -258,12 +259,12 @@ test('choosing Auto or manual RAM is durable, validated and blocked while runnin
   await f.call('memory', 'auto')
   assert.equal((await f.state()).memoryMode, 'auto')
   assert.equal((await f.state()).memoryMb, 8192)
-  const savedAuto = f.files.get('/in-memory-launcher-fixture/game/settings.json') as MemorySettings
+  const savedAuto = f.files.get(settingsFile) as MemorySettings
   const restarted = await fixture({ totalMemoryMb: 8192, memory: savedAuto })
   assert.equal((await restarted.state()).memoryMode, 'auto')
   assert.equal((await restarted.state()).memoryMb, 4096)
   await restarted.call('memory', 6144)
-  const savedManual = restarted.files.get('/in-memory-launcher-fixture/game/settings.json') as MemorySettings
+  const savedManual = restarted.files.get(settingsFile) as MemorySettings
   assert.deepEqual(savedManual, { memoryMode: 'manual', memoryMb: 6144 })
   for (const invalid of ['8192', 'automatic', 1024, 65536, 4096.5, NaN, null]) await assert.rejects(restarted.call('memory', invalid), /Choisis Auto/)
   assert.equal((await restarted.state()).memoryMb, 6144)
@@ -280,7 +281,7 @@ test('failed memory persistence does not change the active or future preference'
   assert.equal((await f.state()).memoryMb, 8192)
   f.controls.settingsFail = false
   await f.call('install')
-  assert.equal((f.files.get('/in-memory-launcher-fixture/game/settings.json') as MemorySettings).memoryMode, 'auto')
+  assert.equal((f.files.get(settingsFile) as MemorySettings).memoryMode, 'auto')
 })
 
 test('updater errors are retryable and applying updates is blocked while a game runs', async () => {

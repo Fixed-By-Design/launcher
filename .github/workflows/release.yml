@@ -23,6 +23,11 @@ jobs:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
     steps:
       - uses: actions/checkout@v4
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/build-bootstrap-windows.ps1 -TestsOnly
+      - if: runner.os == 'macOS'
+        run: bash scripts/build-bootstrap-macos.sh --tests-only
       - uses: actions/setup-node@v4
         with:
           node-version: 24

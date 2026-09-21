@@ -107,7 +107,7 @@ app.whenReady().then(async () => {
   await evaluate(`document.querySelector('.release-notes summary').click()`)
   assert.equal(await evaluate(`document.querySelector('.release-notes').open`), true)
   await evaluate(`document.querySelector('.release-notes summary').click()`)
-  await evaluate(`document.querySelector('.icon-button').click()`)
+  await evaluate(`document.querySelector('.icon-button').focus(); document.querySelector('.icon-button').click()`)
   let snapshot = await capture('03-settings')
   assert.equal(snapshot.active, 'memory')
   assert.ok(snapshot.settings.top >= 0 && snapshot.settings.bottom <= snapshot.height)
@@ -131,7 +131,7 @@ app.whenReady().then(async () => {
   rejectMemory = false
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' })
   window.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' })
-  await delay(100)
+  for (let attempt = 0; attempt < 40 && !(await evaluate(`document.activeElement.className === 'icon-button'`)); attempt++) await delay(50)
   assert.equal(await evaluate(`document.querySelector('dialog').open`), false)
   assert.equal(await evaluate(`document.activeElement.className`), 'icon-button')
 

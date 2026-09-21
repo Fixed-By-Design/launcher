@@ -1,3 +1,4 @@
+param([switch]$TestsOnly)
 $ErrorActionPreference = 'Stop'
 $framework = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
 $compiler = Join-Path $framework 'csc.exe'
@@ -10,6 +11,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Bootstrap test compilation failed' }
   & $tests
   if ($LASTEXITCODE -ne 0) { throw 'Bootstrap tests failed' }
+  if ($TestsOnly) { return }
   Add-Type -AssemblyName System.Drawing
   $icon = [System.Drawing.Icon]::ExtractAssociatedIcon((Resolve-Path 'release/win-unpacked/Fixed By Design.exe'))
   $iconPath = Join-Path $temporary 'bootstrap.ico'

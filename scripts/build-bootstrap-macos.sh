@@ -5,6 +5,7 @@ trap 'rm -rf -- "$temporary"' EXIT
 sources=(bootstrap/macos/Installer.swift)
 swiftc -swift-version 5 -parse-as-library "${sources[@]}" bootstrap/macos/Tests.swift -o "$temporary/tests"
 "$temporary/tests"
+if [ "${1:-}" = --tests-only ]; then exit 0; fi
 app="$temporary/image/Installer Fixed By Design.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 for architecture in arm64 x86_64; do
