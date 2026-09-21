@@ -1,0 +1,100 @@
+{
+  "name": "fixed-by-design-launcher",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fixed By Design community launcher",
+  "author": "Fixed By Design",
+  "main": "dist/electron/main.js",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -p tsconfig.node.json && vite build && esbuild src/electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/electron/preload.cjs",
+    "typecheck": "tsc -p tsconfig.node.json --noEmit && vue-tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:ui": "electron scripts/verify-ui.cjs",
+    "start": "electron .",
+    "server": "node --env-file-if-exists=.env dist/server/main.js",
+    "server:dev": "tsx --env-file-if-exists=.env src/server/main.ts",
+    "release:pack": "tsx --env-file-if-exists=.env scripts/publish-pack.ts",
+    "package": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.fixedbydesign.launcher",
+    "productName": "Fixed By Design",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/electron/**",
+      "dist/installer/**",
+      "dist/shared/**",
+      "dist/renderer/**",
+      "public/icon.png",
+      "package.json",
+      "public/launcher-config.json"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Fixed-By-Design",
+        "repo": "launcher"
+      }
+    ],
+    "mac": {
+      "artifactName": "FBD-Launcher-${version}-macos-${arch}.${ext}",
+      "identity": "-",
+      "notarize": false,
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.games"
+    },
+    "win": {
+      "artifactName": "FBD-Launcher-${version}-windows-${arch}.${ext}",
+      "target": [
+        "nsis"
+      ]
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Fixed-By-Design/launcher.git"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "icon": "public/icon.png"
+  },
+  "overrides": {
+    "@xmcl/unzip": "2.1.2",
+    "undici": "$undici"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^6.0.1",
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/rate-limit": "^11.2.0",
+    "@xmcl/core": "2.15.1",
+    "@xmcl/installer": "6.1.2",
+    "@xmcl/user": "^4.4.2",
+    "electron-updater": "^6.8.9",
+    "fastify": "^5.12.5",
+    "tar": "^7.5.22",
+    "undici": "^7.29.1",
+    "vue": "^3.5.43",
+    "yauzl": "^3.4.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.5",
+    "@types/yauzl": "^3.4.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "electron": "^44.4.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0",
+    "vue-tsc": "^3.3.11"
+  }
+}

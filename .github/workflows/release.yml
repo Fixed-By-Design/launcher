@@ -1,0 +1,48 @@
+name: Build test installers
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win --x64
+            artifact: windows-x64
+          - os: macos-latest
+            target: --mac --arm64 --x64
+            artifact: macos
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:ui
+      - run: npx electron-builder ${{ matrix.target }} --publish never
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/build-bootstrap-windows.ps1
+      - if: runner.os == 'macOS'
+        run: bash scripts/build-bootstrap-macos.sh
+      - run: node scripts/verify-packaged.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: launcher-${{ matrix.artifact }}
+          path: |
+            release/FBD-Launcher-*.exe
+            release/FBD-Launcher-*.dmg
+            release/FBD-Launcher-*.zip
+            release/latest*.yml
+            release/FBD-Launcher-*.blockmap
+          if-no-files-found: error
