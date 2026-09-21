@@ -1,15 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
 const assert = require('node:assert/strict')
-const { mkdtempSync, rmSync } = require('node:fs')
 const { mkdir, writeFile } = require('node:fs/promises')
-const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 const option = name => { const index = process.argv.indexOf(name); return index < 0 ? undefined : process.argv[index + 1] }
 const renderer = resolve(option('--renderer') || join(__dirname, '../dist/renderer'))
 const output = option('--output')
-const profile = mkdtempSync(join(tmpdir(), 'fbd-ui-'))
+const profile = option('--profile')
+if (!profile) throw new Error('Run this test through npm run test:ui')
 app.setPath('userData', profile)
-app.on('quit', () => rmSync(profile, { recursive: true, force: true }))
 const base = {
   access: 'signed-out', busy: false, cancellable: false, running: false,
   runtimeReady: false, minecraftNeedsLogin: true, messageType: 'info',
@@ -195,6 +193,5 @@ app.whenReady().then(async () => {
   assert.deepEqual(errors, [])
   if (output) await writeFile(join(output, 'evidence.json'), JSON.stringify({ evidence, actions, errors }, null, 2))
   console.log(`UI regression checks passed: ${evidence.length} rendered states, shared composition, visible actions, keyboard focus, cancellation, account recovery, automatic/manual memory, updates and production assets.`)
-  window.destroy()
-  app.quit()
+  app.exit(0)
 }).catch(error => { console.error(error, { rendererErrors: errors }); app.exit(1) })

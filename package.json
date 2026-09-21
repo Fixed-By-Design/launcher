@@ -15,7 +15,7 @@
     "build": "tsc -p tsconfig.node.json && vite build && esbuild src/electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/electron/preload.cjs",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && vue-tsc -p tsconfig.json --noEmit",
     "test": "tsx --test tests/*.test.ts",
-    "test:ui": "electron scripts/verify-ui.cjs",
+    "test:ui": "node scripts/run-ui.cjs",
     "start": "electron .",
     "server": "node --env-file-if-exists=.env dist/server/main.js",
     "server:dev": "tsx --env-file-if-exists=.env src/server/main.ts",
