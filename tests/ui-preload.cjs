@@ -3,6 +3,7 @@ const invoke = name => (...args) => ipcRenderer.invoke('ui-test:action', name, a
 contextBridge.exposeInMainWorld('launcher', {
   state: () => ipcRenderer.invoke('ui-test:state'),
   discordLogin: invoke('discordLogin'),
+  openDiscordLogin: invoke('openDiscordLogin'),
   cancelOperation: invoke('cancelOperation'),
   logout: invoke('logout'),
   refresh: invoke('refresh'),
@@ -14,6 +15,8 @@ contextBridge.exposeInMainWorld('launcher', {
   play: invoke('play'),
   setMemory: invoke('setMemory'),
   openFolder: invoke('openFolder'),
+  openLogs: invoke('openLogs'),
+  openReleaseNotes: invoke('openReleaseNotes'),
   applyUpdate: invoke('applyUpdate'),
   checkUpdate: invoke('checkUpdate'),
   onState: callback => {

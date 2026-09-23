@@ -28,6 +28,7 @@ async function fixture(options: { firstRun?: boolean; noProfile?: boolean; ready
     failAuth: false, waitAuth: false, waitRuntime: false, authWaiting: false, runtimeWaiting: false,
     updateFails: true, folderFails: false, settingsFail: false, launchMemory: 0,
     installs: 0, runtimes: 0, logins: 0, launches: 0, updateChecks: 0, updateInstalls: 0,
+    externalUrls: [] as string[], openedPaths: [] as string[],
     copied: '', closedDialog: false, hidden: false, minimized: false,
   }
   const app = Object.assign(new EventEmitter(), {
@@ -85,7 +86,7 @@ async function fixture(options: { firstRun?: boolean; noProfile?: boolean; ready
   sourceModule(new URL('../src/electron/main.ts', import.meta.url), {
     electron: {
       app, BrowserWindow: Window, ipcMain: { handle: (name: string, action: Handler) => handlers.set(name, action) },
-      shell: { openExternal: async () => {}, openPath: async () => controls.folderFails ? 'Failed' : '' },
+      shell: { openExternal: async (url: string) => { controls.externalUrls.push(url) }, openPath: async (path: string) => { controls.openedPaths.push(path); return controls.folderFails ? 'Failed' : '' } },
       clipboard: { writeText: (text: string) => { controls.copied = text } },
       dialog: { showErrorBox() {}, showMessageBox: async () => { controls.closedDialog = true; return { response: 0 } } },
     },
@@ -122,7 +123,13 @@ async function fixture(options: { firstRun?: boolean; noProfile?: boolean; ready
     './microsoft.js': { MinecraftAccount },
     './vault.js': { Vault },
   }, {
-    fetch: async (input: string | URL) => new URL(input).pathname === '/v1/session' ? Response.json({ name: 'Member' }) : Response.json(release),
+    fetch: async (input: string | URL) => {
+      const path = new URL(input).pathname
+      if (path === '/v1/session') return Response.json({ name: 'Member' })
+      if (path === '/v1/auth/attempt') return Response.json({ id: 'test-attempt', proof: 'test-proof', url: 'https://example.test/auth/discord/start?test=1' })
+      if (path === '/v1/auth/poll') return Response.json({ status: 'pending' })
+      return Response.json(release)
+    },
     setInterval: (callback: () => void) => { timers.push(callback); return { unref() {} } },
   })
   await until(() => timers.length === 2)
@@ -301,4 +308,31 @@ test('updater errors are retryable and applying updates is blocked while a game 
   f.child.emit('exit', 0, null)
   await f.call('update')
   assert.equal(f.controls.updateInstalls, 1)
+})
+
+
+test('maintenance opens only the game logs and the validated Modrinth publication', async () => {
+  const f = await fixture()
+  await f.call('logs', '/outside/the/game')
+  assert.equal(f.controls.openedPaths.at(-1), '/in-memory-launcher-fixture/game/instance/logs')
+  await f.call('release-notes', 'file:///outside')
+  assert.equal(f.controls.externalUrls.at(-1), 'https://modrinth.com/modpack/tCkQ45mj/version/MYxEsI5B')
+  f.controls.folderFails = true
+  await assert.rejects(f.call('logs'), /journaux/)
+  await assert.rejects(f.call('discord-open'), /Commence une connexion Discord/)
+  await f.call('logout')
+  await assert.rejects(f.call('release-notes'), /Aucune publication/)
+})
+
+
+test('Discord reopen uses the active attempt only and cancellation invalidates it', async () => {
+  const f = await fixture()
+  const login = f.call('discord-login')
+  await until(() => f.controls.externalUrls.some(url => url.includes('/auth/discord/start')))
+  const url = f.controls.externalUrls.at(-1)
+  await f.call('discord-open', 'https://untrusted.test')
+  assert.equal(f.controls.externalUrls.at(-1), url)
+  await f.call('cancel-operation')
+  await login
+  await assert.rejects(f.call('discord-open'), /Commence une connexion Discord/)
 })

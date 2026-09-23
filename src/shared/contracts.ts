@@ -50,6 +50,7 @@ export interface LauncherState {
 export interface LauncherApi {
   state(): Promise<LauncherState>
   discordLogin(): Promise<void>
+  openDiscordLogin(): Promise<void>
   cancelOperation(): Promise<void>
   logout(): Promise<void>
   refresh(): Promise<void>
@@ -61,6 +62,8 @@ export interface LauncherApi {
   play(): Promise<void>
   setMemory(value: number | 'auto'): Promise<void>
   openFolder(): Promise<void>
+  openLogs(): Promise<void>
+  openReleaseNotes(): Promise<void>
   applyUpdate(): Promise<void>
   checkUpdate(): Promise<void>
   onState(callback: (state: LauncherState) => void): () => void

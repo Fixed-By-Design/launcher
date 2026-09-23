@@ -44,6 +44,7 @@ async function start() {
   let window: BrowserWindow
   let refreshing: Promise<void> | undefined
   let authenticating = false
+  let discordLoginUrl: string | undefined
   let operation: AbortController | undefined
   let checkingUpdate: Promise<void> | undefined
   let gamePid: number | undefined
@@ -163,6 +164,7 @@ async function start() {
         const attempt = await api<{ id: string; proof: string; url: string }>('/v1/auth/attempt', {}, signal)
         const url = new URL(attempt.url)
         if (url.origin !== origin.origin || url.pathname !== '/auth/discord/start') throw new Error('Adresse de connexion invalide.')
+        discordLoginUrl = url.toString()
         state.access = 'pending'; report('Termine la connexion dans ton navigateur.')
         await shell.openExternal(url.toString())
         const deadline = Date.now() + 10 * 60000
@@ -180,7 +182,7 @@ async function start() {
           if (['failed', 'delivered'].includes(result.status)) throw new Error('La connexion a échoué. Réessaie.')
         }
         throw new Error('La connexion a expiré. Réessaie.')
-      } finally { authenticating = false; if (state.access === 'pending') state.access = 'signed-out' }
+      } finally { discordLoginUrl = undefined; authenticating = false; if (state.access === 'pending') state.access = 'signed-out' }
     })
     if (state.access === 'allowed') await refresh(true, true)
   }
@@ -226,6 +228,10 @@ async function start() {
   const actions: Record<string, (...args: unknown[]) => unknown> = {
     state: () => view(),
     'discord-login': discordLogin,
+    'discord-open': async () => {
+      if (!discordLoginUrl || state.access !== 'pending' || !state.cancellable || operation?.signal.aborted) throw new Error('Commence une connexion Discord pour rouvrir le navigateur.')
+      await shell.openExternal(discordLoginUrl)
+    },
     'cancel-operation': cancelOperation,
     refresh: async () => { if (token) await refresh(true, true); else await discordLogin() },
     logout: async () => {
@@ -289,6 +295,17 @@ async function start() {
     folder: async () => {
       await access(); await mkdir(join(root, 'instance'), { recursive: true })
       if (await shell.openPath(join(root, 'instance'))) throw new Error('Le dossier du jeu n’a pas pu s’ouvrir. Réessaie depuis les paramètres.')
+    },
+    logs: async () => {
+      await access()
+      const logs = join(root, 'instance', 'logs')
+      await mkdir(logs, { recursive: true })
+      if (await shell.openPath(logs)) throw new Error('Le dossier des journaux n’a pas pu s’ouvrir.')
+    },
+    'release-notes': async () => {
+      if (state.access !== 'allowed' || !state.release) throw new Error('Aucune publication disponible.')
+      const release = releaseSchema.parse(state.release)
+      await shell.openExternal('https://modrinth.com/modpack/' + release.projectId + '/version/' + release.versionId)
     },
     update: async () => { if (state.busy || state.running) throw new Error('Ferme Minecraft avant de mettre à jour le launcher.'); if (state.update === 'ready') updater.autoUpdater.quitAndInstall() },
     'check-update': checkUpdate,

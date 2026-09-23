@@ -14,7 +14,7 @@ L’installation ne connecte pas de compte et ne télécharge pas Minecraft. Au 
 
 ## Interface et mémoire
 
-Les écrans connecté et déconnecté partagent une composition en deux colonnes et une galerie locale du serveur. Les actions de connexion, préparation, annulation et reconnexion restent visibles aux petites tailles. Les paramètres sont accessibles au clavier, avec restauration du focus.
+Le compte Minecraft et le bouton « Jouer » sont réunis sur l’accueil, à côté des captures du serveur. Les notes de version se déplient sous la zone de lancement, avec un accès à la publication Modrinth. Les paramètres regroupent mémoire, dossier du jeu, journaux, vérification des fichiers et session Discord. Les actions restent visibles aux petites tailles ; les paramètres sont accessibles au clavier, avec restauration du focus. Le navigateur peut être rouvert pendant une connexion Discord en cours.
 
 Les nouveaux profils utilisent **Auto** : moitié de la RAM physique, arrondie au Go inférieur (1 Go = 1 024 Mio), entre 2 et 8 Go. Exemples : 4 Go physiques donnent 2 Go alloués ; 8 donnent 4 ; 12 donnent 6 ; 16 Go et plus donnent 8. La limite manuelle réserve 2 Go au système et plafonne à 16 Go, avec un minimum de 2 Go pour le jeu. Sur une machine de moins de 4 Go, cette réserve n’est donc pas garantie et le jeu peut ne pas être utilisable.
 

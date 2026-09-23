@@ -3,6 +3,7 @@ import type { LauncherApi, LauncherState } from '../shared/contracts.js'
 const api: LauncherApi = {
   state: () => ipcRenderer.invoke('launcher:state'),
   discordLogin: () => ipcRenderer.invoke('launcher:discord-login'),
+  openDiscordLogin: () => ipcRenderer.invoke('launcher:discord-open'),
   cancelOperation: () => ipcRenderer.invoke('launcher:cancel-operation'),
   logout: () => ipcRenderer.invoke('launcher:logout'),
   refresh: () => ipcRenderer.invoke('launcher:refresh'),
@@ -14,6 +15,8 @@ const api: LauncherApi = {
   play: () => ipcRenderer.invoke('launcher:play'),
   setMemory: value => ipcRenderer.invoke('launcher:memory', value),
   openFolder: () => ipcRenderer.invoke('launcher:folder'),
+  openLogs: () => ipcRenderer.invoke('launcher:logs'),
+  openReleaseNotes: () => ipcRenderer.invoke('launcher:release-notes'),
   applyUpdate: () => ipcRenderer.invoke('launcher:update'),
   checkUpdate: () => ipcRenderer.invoke('launcher:check-update'),
   onState: callback => {
