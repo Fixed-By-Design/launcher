@@ -314,7 +314,7 @@ test('updater errors are retryable and applying updates is blocked while a game 
 test('maintenance opens only the game logs and the validated Modrinth publication', async () => {
   const f = await fixture()
   await f.call('logs', '/outside/the/game')
-  assert.equal(f.controls.openedPaths.at(-1), '/in-memory-launcher-fixture/game/instance/logs')
+  assert.equal(f.controls.openedPaths.at(-1), join('/in-memory-launcher-fixture', 'game', 'instance', 'logs'))
   await f.call('release-notes', 'file:///outside')
   assert.equal(f.controls.externalUrls.at(-1), 'https://modrinth.com/modpack/tCkQ45mj/version/MYxEsI5B')
   f.controls.folderFails = true
